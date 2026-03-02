@@ -48,7 +48,6 @@ function DashboardContent() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // NEW: State to store the actual filename
   const [filename, setFilename] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -68,7 +67,6 @@ function DashboardContent() {
     if (!isAuthLoading && token === null) router.push("/login");
   }, [token, router, isAuthLoading]);
 
-// NEW: Fetch the filename for the current upload ID
   useEffect(() => {
     if (!token || !uploadId) return;
     
@@ -78,7 +76,6 @@ function DashboardContent() {
     })
       .then((res) => res.json())
       .then((data) => {
-        // FIXED: Replaced 'any' with a strict TypeScript shape to satisfy ESLint
         const record = data.find((r: { id: number; filename: string }) => r.id === Number(uploadId));
         if (record) {
           setFilename(record.filename);
@@ -148,12 +145,9 @@ function DashboardContent() {
       const matchesAction = filterAction === "All" || log.action === filterAction;
       const matchesAnomaly = filterAnomaly === "All" ? true : filterAnomaly === "Anomalies" ? log.is_anomaly : !log.is_anomaly;
       
+      // FIXED LOGIC: Strictly trust the backend's exact threat_name and action
       const matchesChartAction = chartActionFilter ? log.action === chartActionFilter : true;
-      let matchesChartThreat = true;
-      if (chartThreatFilter) {
-        const logThreat = (log.threat_name && log.threat_name !== "None") ? log.threat_name : "Behavioral Anomaly";
-        matchesChartThreat = logThreat === chartThreatFilter;
-      }
+      const matchesChartThreat = chartThreatFilter ? log.threat_name === chartThreatFilter : true;
 
       return matchesSearch && matchesAction && matchesAnomaly && matchesChartAction && matchesChartThreat;
     });
@@ -197,9 +191,9 @@ function DashboardContent() {
   const attackTypeData = useMemo(() => {
     const map = new Map<string, number>();
     timeFilteredLogs.forEach(log => {
-      if (log.is_anomaly) {
-        const type = (log.threat_name && log.threat_name !== "None") ? log.threat_name : "Behavioral Anomaly";
-        map.set(type, (map.get(type) || 0) + 1);
+      // FIXED LOGIC: Only count explicitly named threats provided by the Python backend
+      if (log.is_anomaly && log.threat_name && log.threat_name !== "None") {
+        map.set(log.threat_name, (map.get(log.threat_name) || 0) + 1);
       }
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value, color: '#ef4444' })).sort((a,b) => b.value - a.value);
@@ -252,7 +246,6 @@ function DashboardContent() {
                 SOC Analyst Dashboard
               </h1>
               <div className="text-slate-500 mt-1 text-sm font-medium">
-                {/* UPDATED: Dynamically injects filename or falls back to ID/Default text */}
                 {uploadId ? `Viewing ${filename ? filename : `Upload #${uploadId}`}` : "Real-time threat detection"}
               </div>
             </div>

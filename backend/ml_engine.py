@@ -224,6 +224,7 @@ def analyze_for_anomalies(df: pd.DataFrame) -> pd.DataFrame:
             except Exception as e:
                 print(f"⚠️ Gemini API Error on chunk {i+1} (Falling back to default text): {e}")
 
+
     # Clean up temporary calculation columns before sending to database
     cols_to_drop = ['log_time_dt', 'minute_bucket', 'events_per_minute', 'blocked_per_minute', 'ai_score']
     for col in cols_to_drop:

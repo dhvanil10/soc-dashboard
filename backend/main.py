@@ -33,7 +33,7 @@ app.add_middleware(
 )
 
 # ==========================================
-# 🔐 AUTHENTICATION SETUP
+# AUTHENTICATION SETUP
 # ==========================================
 SECRET_KEY = "your-super-secret-soc-key"
 ALGORITHM = "HS256"
@@ -81,7 +81,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 # ==========================================
-# 🚪 PUBLIC API ENDPOINTS
+#  PUBLIC API ENDPOINTS
 # ==========================================
 @app.post("/api/signup")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -106,13 +106,13 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer", "email": db_user.email}
 
 # ==========================================
-# 🛡️ SECURE SOC ENDPOINTS
+#  SECURE SOC ENDPOINTS
 # ==========================================
 @app.post("/api/upload")
 async def upload_logs(
     file: UploadFile = File(...), 
     current_user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db) # <--- Added DB Session to save history
+    db: Session = Depends(get_db)
 ):
     file_path = f"temp_{file.filename}"
     try:
@@ -125,9 +125,7 @@ async def upload_logs(
 
         df = analyze_for_anomalies(df)
 
-        # ---------------------------------------------------------
-        # 1. NEW: Create the History Record in SQLAlchemy
-        # ---------------------------------------------------------
+        # 1. Create the History Record in SQLAlchemy
         total_rows = len(df)
         total_anomalies = int(df['is_anomaly'].sum()) if 'is_anomaly' in df.columns else 0
         
@@ -141,9 +139,7 @@ async def upload_logs(
         db.commit()
         db.refresh(new_upload)
 
-        # ---------------------------------------------------------
         # 2. Insert the actual logs with the new upload_id attached
-        # ---------------------------------------------------------
         conn = get_db_connection()
         if not conn:
             raise HTTPException(status_code=500, detail="Database connection failed.")
@@ -168,7 +164,7 @@ async def upload_logs(
                 row['threat_name'], bool(row.get('is_anomaly', False)), 
                 row.get('confidence_score', None), row.get('ai_explanation', None),
                 current_user.id, 
-                new_upload.id # <--- Tying log to the history!
+                new_upload.id
             ))
             inserted_count += 1
             
@@ -187,9 +183,9 @@ async def upload_logs(
         if os.path.exists(file_path):
             os.remove(file_path)
 
-# ---------------------------------------------------------
+
 # NEW ENDPOINT: Get Upload History
-# ---------------------------------------------------------
+
 @app.get("/api/history")
 def get_upload_history(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Fetches the history of all files uploaded by this user."""
@@ -198,7 +194,7 @@ def get_upload_history(current_user: models.User = Depends(get_current_user), db
 
 @app.get("/api/logs")
 def get_logs(
-    upload_id: Optional[int] = None, # <--- NEW: Optional filter parameter
+    upload_id: Optional[int] = None,
     current_user: models.User = Depends(get_current_user)
 ):
     """Fetches logs for the logged-in user, optionally filtered by a specific upload."""
@@ -209,7 +205,6 @@ def get_logs(
             
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
-        # If the frontend passes an upload_id, we filter by it!
         if upload_id:
             cursor.execute("""
                 SELECT * FROM logs 
@@ -254,3 +249,8 @@ def get_logs(
     except Exception as e:
         print(f"Error in GET /api/logs: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    # This loop keeps the Docker container running!
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

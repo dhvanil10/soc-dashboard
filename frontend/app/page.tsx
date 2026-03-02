@@ -15,7 +15,6 @@ interface UploadRecord {
 }
 
 export default function HomeUploadPage() {
-  // FIXED: Grab isAuthLoading from context
   const { token, logout, isAuthLoading } = useAuth();
   const router = useRouter();
   
@@ -26,7 +25,6 @@ export default function HomeUploadPage() {
   const [history, setHistory] = useState<UploadRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // FIXED: Wait for auth to finish loading before kicking the user out!
   useEffect(() => {
     if (!isAuthLoading && token === null) {
       router.push("/login");
@@ -109,7 +107,6 @@ export default function HomeUploadPage() {
     }
   };
 
-  // FIXED: Don't render the UI until auth finishes loading
   if (isAuthLoading || !token) return null; 
 
   return (
@@ -182,29 +179,29 @@ export default function HomeUploadPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="p-4 font-semibold">Date</th>
                   <th className="p-4 font-semibold">Filename</th>
-                  <th className="p-4 font-semibold">Total Events</th>
-                  <th className="p-4 font-semibold">Anomalies Found</th>
+                  <th className="p-4 font-semibold text-center">Total Events</th>
+                  <th className="p-4 font-semibold text-center">Anomalies Found</th>
                   <th className="p-4 font-semibold text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loadingHistory ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-400 animate-pulse">Loading history...</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-400 animate-pulse">Loading history...</td></tr>
                 ) : history.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-slate-500">No logs uploaded yet.</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">No logs uploaded yet.</td></tr>
                 ) : (
                   history.map((record) => (
                     <tr key={record.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="p-4 text-slate-500 whitespace-nowrap">{new Date(record.upload_date).toLocaleString()}</td>
                       <td className="p-4 font-medium text-slate-700">{record.filename}</td>
-                      <td className="p-4 text-slate-600">{record.total_events}</td>
-                      <td className="p-4">
+                      <td className="p-4 text-center text-slate-600">{record.total_events}</td>
+                      <td className="p-4 text-center">
                         {record.anomalies_found > 0 ? (
-                          <span className="flex items-center gap-1 text-red-600 font-semibold bg-red-50 px-2 py-1 rounded w-fit">
-                            <ShieldAlert className="w-3 h-3" /> {record.anomalies_found}
-                          </span>
+                          <div className="flex justify-center">
+                            <span className="flex items-center gap-1 text-red-600 font-semibold bg-red-50 px-2 py-1 rounded w-fit">
+                              <ShieldAlert className="w-3 h-3" /> {record.anomalies_found}
+                            </span>
+                          </div>
                         ) : (
                           <span className="text-slate-400">0</span>
                         )}
