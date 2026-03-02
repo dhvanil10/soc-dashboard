@@ -24,8 +24,9 @@ The system prioritizes data privacy by utilizing local machine learning for prim
 * Recharts (Data Visualization)
 * Lucide React (Iconography)
 
-### Backend
+### Backend & Database
 * Python
+* PostgreSQL (via Docker)
 * Pandas & NumPy (Data processing and feature engineering)
 * Scikit-Learn (Isolation Forest ML model)
 * Google Generative AI SDK (Gemini API integration)
@@ -45,9 +46,18 @@ This privacy-safe AI processing occurs in four distinct steps once anomalies are
 ### Prerequisites
 * Node.js (v18 or higher)
 * Python (v3.9 or higher)
+* Docker and Docker Compose
 * A valid Google Gemini API Key
 
-### Backend Setup
+### 1. Database Setup (Docker)
+The backend requires a PostgreSQL database to store upload history and threat logs.
+1. Ensure Docker Desktop is running on your machine.
+2. From the root of the project, spin up the database container:
+   ```bash
+   docker-compose up -d
+   ```
+
+### 2. Backend Setup
 1. Navigate to the backend directory:
    ```bash
    cd backend
@@ -70,8 +80,8 @@ This privacy-safe AI processing occurs in four distinct steps once anomalies are
    python main.py
    ```
 
-### Frontend Setup
-1. Navigate to the frontend directory:
+### 3. Frontend Setup
+1. Open a new terminal window and navigate to the frontend directory:
    ```bash
    cd frontend
    ```
