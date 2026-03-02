@@ -1,102 +1,100 @@
-# Hybrid AI SIEM Dashboard
+# AI-Powered SOC Analyst Dashboard
 
-## Overview
-This project is a Full-Stack Security Information and Event Management (SIEM) dashboard designed for Security Operations Center (SOC) analysts. It processes raw web server logs, identifies critical vulnerabilities using a hybrid detection engine, and automatically generates incident response reports using Large Language Models (LLMs).
+A full-stack Security Operations Center (SOC) web application designed to ingest unstructured network logs, detect active cyber threats using Machine Learning, and generate actionable, human-readable incident reports using Generative AI.
 
-The system prioritizes data privacy by utilizing local machine learning for primary detection and heavily sanitizing data before any third-party AI processing occurs.
+## Project Overview
+
+Modern SOC teams are often overwhelmed by log data. This project solves that problem by automating the initial triage process. It parses raw access logs, applies a multi-layered threat detection engine to identify malicious behavior, and utilizes Large Language Models (LLMs) to write technical incident reports, allowing analysts to focus on mitigation rather than manual log reading.
 
 ## Key Features
 
-* **Machine Learning Anomaly Detection**
-  * Utilizes Scikit-Learn's Isolation Forest algorithm to detect zero-day behavioral anomalies based on request volume, payload size, and traffic patterns.
-* **Signature-Based Threat Detection**
-  * Employs strict regular expressions (Regex) to instantly identify known attack vectors, including SQL Injection (SQLi), Cross-Site Scripting (XSS), Command Injection (RCE), and Unauthorized Sensitive Path Access.
-* **Volumetric Attack Analysis**
-  * Groups time-series data into minute-level buckets to accurately detect automated Brute Force attacks, Directory Enumeration, and Vulnerability Scanning (404 Storms).
-* **Interactive SOC Dashboard**
-  * A responsive Next.js frontend featuring custom data visualization, dynamic time-range scrubbing, and granular threat filtering.
+* **Automated Log Ingestion & Parsing:** Capable of intelligently parsing standard CSVs and raw Apache/Nginx unstructured text logs using advanced Regular Expressions and Pandas.
+* **Interactive Analytics Dashboard:** A Next.js frontend featuring time-slicing sliders, dynamic data filtering, and interactive visualizations (via Recharts).
+* **Automated Incident Reporting:** Generates a 3-part incident response report (Context, Trigger Reason, and Mitigation) for every detected anomaly.
+* **Privacy-Preserving Architecture:** Automatically masks and redacts sensitive Personally Identifiable Information (PII) like IP addresses and usernames before sending data to external AI APIs.
+* **Historical Threat Tracking:** Persists all uploaded logs, parsed data, and AI reports in a relational database for historical auditing and compliance.
 
-## Technology Stack
+## Tech Stack
 
-### Frontend
-* Next.js (React Framework)
-* Tailwind CSS (Styling)
-* Recharts (Data Visualization)
-* Lucide React (Iconography)
-
-### Backend & Database
-* Python
-* PostgreSQL (via Docker)
-* Pandas & NumPy (Data processing and feature engineering)
-* Scikit-Learn (Isolation Forest ML model)
-* Google Generative AI SDK (Gemini API integration)
+* **Frontend:** Next.js (React), Tailwind CSS, Recharts, Lucide Icons
+* **Backend:** Python, FastAPI, SQLAlchemy (ORM), Psycopg2
+* **Database:** PostgreSQL
+* **Machine Learning & AI:** Scikit-Learn (IsolationForest), Google Gemini API (gemini-1.5-flash)
+* **Infrastructure:** Docker, Docker Compose
 
 ## Architecture Notes
-To prevent API rate limiting and token exhaustion, the backend implements a chunking methodology. Anomalies are scrubbed of identifiable information, chunked into specific batch sizes, and sent to the LLM. The responses are then parsed, unmasked, and mapped back to the relational database locally before being served to the frontend UI.
 
-This privacy-safe AI processing occurs in four distinct steps once anomalies are detected:
+* **Decoupled Microservices:** The application is fully containerized using Docker, separating the frontend, backend, and database into distinct, easily scalable services.
+* **Stateless Authentication:** Implements JWT (JSON Web Tokens) and bcrypt password hashing for secure, stateless API authorization.
+* **Rate-Limit Management:** The backend implements an intelligent chunking and micro-pause mechanism to batch process LLM requests, ensuring the system stays within external API rate limits without crashing or dropping logs.
+* **Hybrid Data Processing:** Uses a custom Regex blueprint for fast parsing, with a safe fallback to Pandas DataFrames for unexpected file structures.
 
-1. **Local Data Scrubbing:** Before any data leaves the local server, all Personally Identifiable Information (PII) such as IP addresses and Usernames are stripped from the logs and replaced with `[REDACTED_IP]` and `[USER_LOGIN]` placeholder tags.
-2. **Batch Chunking:** The scrubbed anomalies are divided into chunks (e.g., batches of 100). This ensures the payload size remains well within the LLM's context window, preventing dropped connections or truncated JSON responses.
-3. **AI Template Generation:** The LLM is prompted to analyze the chunks and generate generalized, 3-part incident response templates (Context, Trigger Reason, Mitigation) that utilize the placeholder tags.
-4. **Local Data Re-injection:** Once the AI templates are returned to the local server, the Python engine intercepts the response and rapidly injects the real, unmasked IP addresses and Usernames back into the text before saving the final reports to the database.
+## AI Model & Anomaly Detection Approach
 
-## Installation and Setup
+The application does not rely on a single model. Instead, it utilizes a highly scalable, three-phase pipeline to ensure accurate detection and minimize false positives:
+
+1. **Deterministic Rule Matching (Signatures):** The engine first scans the URLs and HTTP methods using advanced Regular Expressions to catch known, common attack vectors. This layer immediately flags threats like SQL Injection (SQLi), Cross-Site Scripting (XSS), and Command Injection / Directory Traversal.
+
+2. **Machine Learning Anomaly Detection (Zero-Day Threats):**
+   For novel attacks that evade standard Regex signatures, the system groups traffic by minute-level time buckets and feeds volumetric data (bytes sent/received, requests per minute) into Scikit-Learn's IsolationForest algorithm. This unsupervised machine learning model calculates mathematical outliers, flagging unusual behavior (e.g., data exfiltration or abnormal request spikes) as generic "Behavioral Anomalies".
+
+3. **Generative AI Incident Reporting (Contextualization):**
+   Once anomalies are flagged, the data is scrubbed of PII and batched into chunks. These chunks are sent to the Google Gemini 1.5 Flash Large Language Model via strict prompt engineering. The LLM acts as an expert security analyst, interpreting the raw data and returning structured JSON containing the threat context, the specific trigger reason, and actionable mitigation steps.
+
+---
+
+## Local Installation & Setup
+
+The entire application is containerized, making it simple to deploy locally without manual environment or dependency configuration.
 
 ### Prerequisites
-* Node.js (v18 or higher)
-* Python (v3.9 or higher)
-* Docker and Docker Compose
-* A valid Google Gemini API Key
+* Git
+* Docker Desktop installed and running.
+* A free Google Gemini API Key.
 
-### 1. Database Setup (Docker)
-The backend requires a PostgreSQL database to store upload history and threat logs.
-1. Ensure Docker Desktop is running on your machine.
-2. From the root of the project, spin up the database container:
-   ```bash
-   docker-compose up -d
-   ```
+### 1. Clone the Repository
+Open your terminal and run the following commands:
+```bash
+git clone [https://github.com/YOUR_GITHUB_USERNAME/soc-dashboard.git](https://github.com/YOUR_GITHUB_USERNAME/soc-dashboard.git)
+cd soc-dashboard
+```
 
-### 2. Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   ```
-3. Install the required Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file in the backend directory and add your API key:
-   ```env
-   GEMINI_API_KEY=your_api_key_here
-   ```
-5. Start the backend server:
-   ```bash
-   python main.py
-   ```
+### 2. Environment Configuration
+Create a `.env` file inside the `backend/` directory to hold your database and API credentials:
+```bash
+touch backend/.env
+```
+Open the `backend/.env` file and add the following configuration:
+```env
+# Database Settings (These match the docker-compose.yml configuration)
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=soc_logs
+DB_USER=soc_admin
+DB_PASSWORD=supersecretpassword
 
-### 3. Frontend Setup
-1. Open a new terminal window and navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install the required Node dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+# AI Credentials (Replace with your actual key)
+GEMINI_API_KEY=your_actual_gemini_api_key_here
+```
 
-## Usage
-1. Open a web browser and navigate to `http://localhost:3000`.
-2. Authenticate using your credentials.
-3. Click "Upload New" to ingest a raw Apache or Nginx access log file (TXT, CSV, or LOG format).
-4. The backend will parse the file, run the isolation forest model, match threat signatures, and batch-process the anomalies through the LLM.
-5. Utilize the visual time-range slider and filter dropdowns to isolate specific threat events and review the automated incident response mitigation steps.
+### 3. Build and Run the Application
+From the root directory of the project (where the `docker-compose.yml` file is located), start the Docker containers:
+```bash
+docker-compose up --build
+```
+
+## Usage Instructions
+
+Once the terminal indicates that both Uvicorn (Backend) and Next.js (Frontend) are successfully running, you can access the application:
+
+1. **Access the Frontend:** Open your web browser and navigate to http://localhost:3000.
+2. **Create an Account:** On your first visit, click "Need an account? Sign up" to create a local admin account.
+3. **Upload Logs:** Log in and upload a standard `.txt` or `.csv` access log file. 
+4. **View Dashboard:** Once processing is complete, the application will automatically route you to the interactive dashboard.
+5. **Access the API Documentation:** To interact directly with the backend endpoints, navigate to the auto-generated Swagger UI at http://localhost:8000/docs.
+
+### Stopping the Application
+To gracefully stop the servers and clean up the running containers, press `Ctrl + C` in your terminal, or run:
+```bash
+docker-compose down
+```
