@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+pandas
+scikit-learn
+psycopg2-binary
+python-dotenv
+google-generativeai  # Or openai, depending on your LLM choice
